@@ -1,0 +1,54 @@
+# 构建目录
+/build/
+/cmake-build-debug/
+/out/
+/rmdb_client/build/
+
+# 编译产生的文件
+*.o
+*.a
+*.so
+*.dylib
+
+# 数据库文件
+*.db
+*.log
+*.meta
+
+# IDE配置
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# CMake生成的文件
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+compile_commands.json
+
+# 操作系统生成的文件
+.DS_Store
+.directory
+.Trash-*
+*~
+
+# 调试文件
+core
+vgcore.*
+*.dSYM/
+
+# 临时文件
+*.txt
+tmp/
+temp/
+
+# cache
+.cache/
+
+# 依赖库生成的文件
+deps/*/build/
+
+# 自动生成的文件
+*.generated.*
