@@ -45,6 +45,7 @@ struct Help : public TreeNode {
 };
 
 struct ShowTables : public TreeNode {
+    ShowTables() = default;
 };
 
 struct TxnBegin : public TreeNode {
