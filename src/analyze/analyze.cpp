@@ -136,6 +136,16 @@ void Analyze::check_clause(const std::vector<std::string> &tab_names, std::vecto
         ColType lhs_type = lhs_col->type;
         ColType rhs_type;
         if (cond.is_rhs_val) {
+            // 对常量值进行类型转换
+            if (lhs_type == TYPE_FLOAT && cond.rhs_val.type == TYPE_INT) {
+                // 如果列是float类型而常量是int类型，将常量转换为float
+                int int_val = cond.rhs_val.int_val;
+                cond.rhs_val.set_float(static_cast<float>(int_val));
+            } else if (lhs_type == TYPE_INT && cond.rhs_val.type == TYPE_FLOAT) {
+                // 如果列是int类型而常量是float类型，将常量转换为int
+                float float_val = cond.rhs_val.float_val;
+                cond.rhs_val.set_int(static_cast<int>(float_val));
+            }
             cond.rhs_val.init_raw(lhs_col->len);
             rhs_type = cond.rhs_val.type;
         } else {
@@ -143,7 +153,11 @@ void Analyze::check_clause(const std::vector<std::string> &tab_names, std::vecto
             auto rhs_col = rhs_tab.get_col(cond.rhs_col.col_name);
             rhs_type = rhs_col->type;
         }
-        if (lhs_type != rhs_type) {
+        
+        // 检查类型是否兼容（现在允许int和float之间的比较）
+        if (lhs_type != rhs_type && 
+            !((lhs_type == TYPE_INT && rhs_type == TYPE_FLOAT) || 
+              (lhs_type == TYPE_FLOAT && rhs_type == TYPE_INT))) {
             throw IncompatibleTypeError(coltype2str(lhs_type), coltype2str(rhs_type));
         }
     }
