@@ -39,12 +39,42 @@ class ProjectionExecutor : public AbstractExecutor {
         len_ = curr_offset;
     }
 
-    void beginTuple() override {}
+    void beginTuple() override {
+        // 调用子节点的beginTuple来初始化扫描
+        prev_->beginTuple();
+    };
 
-    void nextTuple() override {}
+    void nextTuple() override {
+        // 调用子节点的nextTuple来移动到下一条记录
+        prev_->nextTuple();
+    };
 
     std::unique_ptr<RmRecord> Next() override {
-        return nullptr;
+        // 1. 从子节点获取下一条记录
+        auto prev_record = prev_->Next();
+        if (prev_record == nullptr) {
+            return nullptr;
+        }
+
+        // 2. 创建新的记录用于存储投影结果
+        auto proj_record = std::make_unique<RmRecord>(len_);
+        
+        // 3. 获取子节点的列信息
+        auto &prev_cols = prev_->cols();
+        
+        // 4. 根据投影列的索引复制数据
+        for (size_t i = 0; i < sel_idxs_.size(); i++) {
+            size_t prev_idx = sel_idxs_[i];
+            auto &prev_col = prev_cols[prev_idx];
+            auto &curr_col = cols_[i];
+            
+            // 从原记录复制数据到新记录
+            memcpy(proj_record->data + curr_col.offset,
+                  prev_record->data + prev_col.offset,
+                  curr_col.len);
+        }
+
+        return proj_record;
     }
 
     Rid &rid() override { return _abstract_rid; }
@@ -52,4 +82,6 @@ class ProjectionExecutor : public AbstractExecutor {
     const std::vector<ColMeta> &cols() const override {
         return cols_;
     };
+
+    bool is_end() const override { return prev_->is_end() == true; };
 };

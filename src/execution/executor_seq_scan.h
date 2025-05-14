@@ -50,7 +50,6 @@ class SeqScanExecutor : public AbstractExecutor {
     void beginTuple() override {
         // 初始化表扫描迭代器
         scan_ = std::make_unique<RmScan>(fh_);
-        // 移动到第一个满足条件的记录
         nextTuple();
     }
 
@@ -106,7 +105,6 @@ class SeqScanExecutor : public AbstractExecutor {
         auto rec = fh_->get_record(rid_, context_);
         // 移动到下一条满足条件的记录
         scan_->next();
-        nextTuple();
         
         return rec;
     }
@@ -116,4 +114,6 @@ class SeqScanExecutor : public AbstractExecutor {
     const std::vector<ColMeta> &cols() const override {
         return cols_;
     };
+
+    bool is_end() const override { return scan_->is_end();};
 };
