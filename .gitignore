@@ -52,5 +52,3 @@ deps/*/build/
 
 # 自动生成的文件
 *.generated.*
-
-/test/
