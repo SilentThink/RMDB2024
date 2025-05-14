@@ -82,6 +82,26 @@ struct Condition {
     Value rhs_val;    // right-hand side value
 };
 
+template<typename T>
+bool compare(const T& lhs, const T& rhs, CompOp op) {
+    switch (op) {
+        case CompOp::OP_EQ:
+            return lhs == rhs;
+        case CompOp::OP_NE:
+            return lhs != rhs;
+        case CompOp::OP_LT:
+            return lhs < rhs;
+        case CompOp::OP_GT:
+            return lhs > rhs;
+        case CompOp::OP_LE:
+            return lhs <= rhs;
+        case CompOp::OP_GE:
+            return lhs >= rhs;
+        default:
+            throw InternalError("Unsupported comparison operator");
+    }
+}
+
 struct SetClause {
     TabCol lhs;
     Value rhs;
