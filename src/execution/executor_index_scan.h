@@ -77,4 +77,8 @@ class IndexScanExecutor : public AbstractExecutor {
     }
 
     Rid &rid() override { return rid_; }
+
+    const std::vector<ColMeta> &cols() const override {
+        return cols_;
+    };
 };
