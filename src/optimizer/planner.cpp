@@ -358,6 +358,7 @@ std::shared_ptr<Plan> Planner::do_planner(std::shared_ptr<Query> query, Context 
                                                 std::vector<Value>(), query->conds, std::vector<SetClause>());
     } else if (auto x = std::dynamic_pointer_cast<ast::UpdateStmt>(query->parse)) {
         // update;
+        DEBUG_LOG("Planner::do_planner() - Processing UPDATE statement for table: %s", x->tab_name.c_str());
         // 生成表扫描方式
         std::shared_ptr<Plan> table_scan_executors;
         // 只有一张表，不需要进行物理优化了
@@ -365,11 +366,14 @@ std::shared_ptr<Plan> Planner::do_planner(std::shared_ptr<Query> query, Context 
         std::vector<std::string> index_col_names;
         bool index_exist = get_index_cols(x->tab_name, query->conds, index_col_names);
 
+        DEBUG_LOG("Planner::do_planner() - Index exists: %d", index_exist);
         if (index_exist == false) {  // 该表没有索引
-        index_col_names.clear();
+            DEBUG_LOG("Planner::do_planner() - Using sequential scan");
+            index_col_names.clear();
             table_scan_executors = 
                 std::make_shared<ScanPlan>(T_SeqScan, sm_manager_, x->tab_name, query->conds, index_col_names);
         } else {  // 存在索引
+            DEBUG_LOG("Planner::do_planner() - Using index scan");
             table_scan_executors =
                 std::make_shared<ScanPlan>(T_IndexScan, sm_manager_, x->tab_name, query->conds, index_col_names);
         }

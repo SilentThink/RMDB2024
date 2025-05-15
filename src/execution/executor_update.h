@@ -38,13 +38,17 @@ class UpdateExecutor : public AbstractExecutor {
         context_ = context;
     }
     std::unique_ptr<RmRecord> Next() override {
+        DEBUG_LOG("UpdateExecutor::Next() - Starting update operation");
         // 如果没有需要更新的记录，直接返回nullptr
         if (rids_.empty()) {
+            DEBUG_LOG("UpdateExecutor::Next() - No records to update");
             return nullptr;
         }
 
+        DEBUG_LOG("UpdateExecutor::Next() - Found %lu records to update", rids_.size());
         // 根据所有需要更新的记录rid进行更新
         for (auto& rid : rids_) {
+            DEBUG_LOG("UpdateExecutor::Next() - Processing record RID: {%d, %d}", rid.page_no, rid.slot_no);
             // 获取原记录
             auto rec = fh_->get_record(rid, context_);
             
@@ -55,14 +59,16 @@ class UpdateExecutor : public AbstractExecutor {
             for (auto &set_clause : set_clauses_) {
                 // 找到要更新的列
                 auto col = tab_.get_col(set_clause.lhs.col_name);
+                DEBUG_LOG("UpdateExecutor::Next() - Updating column: %s, type: %d", 
+                     set_clause.lhs.col_name.c_str(), col->type);
                 
                 // 检查类型是否匹配
                 if (col->type != set_clause.rhs.type) {
+                    DEBUG_LOG("UpdateExecutor::Next() - Type mismatch: column type %d, value type %d",
+                         col->type, set_clause.rhs.type);
                     throw IncompatibleTypeError(coltype2str(col->type), coltype2str(set_clause.rhs.type));
                 }
                 
-                // 初始化要设置的值
-                set_clause.rhs.init_raw(col->len);
                 
                 // 将新值拷贝到记录中
                 memcpy(new_rec->data + col->offset, set_clause.rhs.raw->data, col->len);
@@ -70,6 +76,7 @@ class UpdateExecutor : public AbstractExecutor {
             
             // 更新索引
             for (auto &index : tab_.indexes) {
+                DEBUG_LOG("UpdateExecutor::Next() - Updating index for table: %s", tab_name_.c_str());
                 // 构造旧索引键值
                 char* old_key = new char[index.col_tot_len];
                 int old_offset = 0;
@@ -100,6 +107,7 @@ class UpdateExecutor : public AbstractExecutor {
             }
             
             // 更新记录
+            DEBUG_LOG("UpdateExecutor::Next() - Updating record in file");
             fh_->update_record(rid, new_rec->data, context_);
         }
         

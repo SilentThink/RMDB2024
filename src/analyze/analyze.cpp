@@ -54,6 +54,58 @@ std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse)
         check_clause(query->tables, query->conds);
     } else if (auto x = std::dynamic_pointer_cast<ast::UpdateStmt>(parse)) {
         /** TODO: */
+        // 需要处理update语句,将set子句填充到query->set_clauses中
+        query->tables.push_back(x->tab_name);
+        get_clause(x->conds, query->conds);
+        check_clause(query->tables, query->conds);
+        
+        // 处理set子句
+        std::vector<ColMeta> all_cols;
+        get_all_cols(query->tables, all_cols);
+        
+        // 遍历所有set子句
+        for (auto &sv_set : x->set_clauses) {
+            SetClause set_clause;
+            // 设置要更新的列
+            set_clause.lhs = {.tab_name = x->tab_name, .col_name = sv_set->col_name};
+            // 检查列是否存在
+            set_clause.lhs = check_column(all_cols, set_clause.lhs);
+            
+            // 获取右值并进行类型转换
+            if (auto rhs_val = std::dynamic_pointer_cast<ast::Value>(sv_set->val)) {
+                // 如果右值是常量
+                set_clause.rhs = convert_sv_value(rhs_val);
+                
+                // 获取列的类型信息用于类型检查和转换
+                TabMeta &tab = sm_manager_->db_.get_table(set_clause.lhs.tab_name);
+                auto col = tab.get_col(set_clause.lhs.col_name);
+                
+                // 进行类型转换
+                if (col->type == TYPE_FLOAT && set_clause.rhs.type == TYPE_INT) {
+                    // 整数转浮点数
+                    int int_val = set_clause.rhs.int_val;
+                    set_clause.rhs.set_float(static_cast<float>(int_val));
+                } else if (col->type == TYPE_INT && set_clause.rhs.type == TYPE_FLOAT) {
+                    // 浮点数转整数
+                    float float_val = set_clause.rhs.float_val;
+                    set_clause.rhs.set_int(static_cast<int>(float_val));
+                } else if (col->type != set_clause.rhs.type) {
+                    // 其他类型不匹配的情况
+                    throw IncompatibleTypeError(coltype2str(col->type), 
+                                            coltype2str(set_clause.rhs.type));
+                }
+
+                // 初始化要设置的值
+                set_clause.rhs.init_raw(col->len);
+                
+            } else {
+                throw InternalError("Unexpected value type in set clause");
+            }
+            
+            // 将处理好的set子句添加到查询中
+            query->set_clauses.push_back(set_clause);
+        }
+        
 
     } else if (auto x = std::dynamic_pointer_cast<ast::DeleteStmt>(parse)) {
         //处理where条件

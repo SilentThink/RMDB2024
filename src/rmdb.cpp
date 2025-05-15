@@ -28,6 +28,7 @@ See the Mulan PSL v2 for more details. */
 #define MAX_CONN_LIMIT 8
 
 static bool should_exit = false;
+bool enable_debug_log = true;
 
 // 构建全局所需的管理器对象
 auto disk_manager = std::make_unique<DiskManager>();
@@ -266,6 +267,12 @@ int main(int argc, char **argv) {
         // 需要指定数据库名称
         std::cerr << "Usage: " << argv[0] << " <database>" << std::endl;
         exit(1);
+    }
+
+    // 通过环境变量控制调试输出
+    const char* debug_env = getenv("RMDB_DEBUG");
+    if (debug_env != nullptr) {
+        enable_debug_log = (strcmp(debug_env, "1") == 0);
     }
 
     signal(SIGINT, sigint_handler);

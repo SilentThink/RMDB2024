@@ -26,6 +26,16 @@ extern std::atomic<bool> enable_logging;
 /** If ENABLE_LOGGING is true, the log should be flushed to disk every LOG_TIMEOUT. */
 extern std::chrono::duration<int64_t> log_timeout;
 
+// Debug flags
+extern bool enable_debug_log;  // 用于调试信息输出
+
+#define DEBUG_LOG(format, ...) \
+    do { \
+        if (enable_debug_log) { \
+            printf("[DEBUG] " format "\n", ##__VA_ARGS__); \
+        } \
+    } while(0)
+
 static constexpr int INVALID_FRAME_ID = -1;                                   // invalid frame id
 static constexpr int INVALID_PAGE_ID = -1;                                    // invalid page id
 static constexpr int INVALID_TXN_ID = -1;                                     // invalid transaction id
